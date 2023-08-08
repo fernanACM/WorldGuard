@@ -23,6 +23,7 @@ gui_flag_xp_drops: 經驗值掉落
 gui_flag_invincible: 無敵 (免疫任何傷害)
 gui_flag_fall_dmg: 掉落傷害
 gui_flag_usage: 使用 (例如箱子及門)
+gui_flag_interactframe: "Interact with frames"
 gui_flag_item_drop: 物品掉落
 gui_flag_explosions: 爆炸
 gui_flag_notify_enter: 進入區域提示

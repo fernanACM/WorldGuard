@@ -4,6 +4,7 @@
   no-permission-for-command: You do not have permission to use this command.
   denied-eat: You cannot eat in this area.
   denied-ender-pearls: You cannot use ender pearls in this area.
+  denied-bow: You cannot use bow in this area.
   denied-chat: You cannot chat in this region.
   denied-item-drop: You cannot drop items in this region.
   denied-pvp: You cannot hurt players of this region.

@@ -28,8 +28,7 @@ use pocketmine\network\mcpe\protocol\SetPlayerGameTypePacket;
 use pocketmine\entity\{Entity};
 use pocketmine\world\biome\Biome;
 
-class Utils
-{
+class Utils{
 
     const GAMEMODES = [
         "0" => "survival",
@@ -66,7 +65,7 @@ class Utils
 
     public static function gm2string(int $gm): string
     {
-        return self::GM2STRING[$gm] ?? "survival";
+        return self::GAMEMODES[$gm] ?? "survival";
     }
 
     /**

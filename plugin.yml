@@ -1,8 +1,8 @@
 name: WorldGuard
 main: MihaiChirculete\WorldGuard\WorldGuard
-api: 4.0.0
-version: 1.3
-authors: [MihaiChirculete, fernanACM]
+api: 5.0.0
+version: 3.0.0-ACM
+authors: [fernanACM, MihaiChirculete]
 website: https://github.com/MihaiChirculete/WorldGuard
 commands:
   worldguard:
@@ -43,6 +43,10 @@ permissions:
     default: op
   worldguard.deathdrop:
     default: op
+  worldguard.usebow:
+    default: op
+  worldguard.usebarrel:
+    default: op
   worldguard.usechest:
     default: op
   worldguard.usechestender:
@@ -70,6 +74,10 @@ permissions:
   worldguard.usepressureplate:
     default: op
   worldguard.useusebutton:
+    default: op
+  worldguard.interactframe:
+    default: op
+  worldguard.useshulkers:
     default: op
   worldguard.bypass.gamemode:
     default: op

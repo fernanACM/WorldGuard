@@ -14,10 +14,10 @@ class ResourceManager
     public ?WorldGuard $pluginInstance;
     private $serverInstance = null;
     private $pluginVersion = null;
-    private $messages = [];
-    private $lang = [];
-    private $config = [];
-    private $regions = [];
+    private array $messages = [];
+    private array $lang = [];
+    private array $config = [];
+    private array $regions = [];
 
     private function __construct(WorldGuard $plugin, Server $sv)
     {
@@ -36,53 +36,16 @@ class ResourceManager
         return ResourceManager::$instance;
     }
 
-    //Base Lang from Client -> looked into MyPlot  files 
-    /*public function getLanguage() : BaseLang {
-        return $this->baseLang;
-    }
-    
-    public function getFallBackLang() : BaseLang {
-        return new BaseLang(BaseLang::FALLBACK_LANGUAGE, $this->getFile() . "resources/");
-    }
-    public function onLoad() : void {
-    $this->getLogger()->debug(TF::BOLD . "Loading Languages");
-    // Loading Languages
-    // @var string $lang 
-    $lang = $this->getConfig()->get("Language", BaseLang::FALLBACK_LANGUAGE);
-    if($this->getConfig()->get("Custom Messages", false)) {
-        if(!file_exists($this->getDataFolder()."lang.ini")) {
-            // @var string|resource $resource 
-            $resource = $this->getResource($lang.".ini") ?? file_get_contents($this->getFile()."resources/".BaseLang::FALLBACK_LANGUAGE.".ini");
-            file_put_contents($this->getDataFolder()."lang.ini", $resource);
-            if(!is_string($resource)) {
-                // @var resource $resource 
-                fclose($resource);
-            }
-            $this->saveResource(BaseLang::FALLBACK_LANGUAGE.".ini", true);
-            $this->getLogger()->debug("Custom Language ini created");
-        }
-        $this->baseLang = new BaseLang("lang", $this->getDataFolder());
-    }else{
-        if(file_exists($this->getDataFolder()."lang.ini")) {
-            unlink($this->getDataFolder()."lang.ini");
-            unlink($this->getDataFolder().BaseLang::FALLBACK_LANGUAGE.".ini");
-            $this->getLogger()->debug("Custom Language ini deleted");
-        }
-        $this->baseLang = new BaseLang($lang, $this->getFile() . "resources/");
-    }
-    }*/
     public function getConfig()
     {
         return $this->config;
     }
 
-    public function getLanguagePack()
-    {
+    public function getLanguagePack(){
         return $this->lang;
     }
 
-    public function getMessages()
-    {
+    public function getMessages(){
         return $this->messages;
     }
 

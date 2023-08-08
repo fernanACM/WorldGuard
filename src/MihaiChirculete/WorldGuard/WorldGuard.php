@@ -30,12 +30,11 @@ use pocketmine\Server;
 use pocketmine\utils\TextFormat as TF;
 use pocketmine\player\Player;
 use pocketmine\world\Position;
-use pocketmine\permission\{DefaultPermissions, Permission, PermissionManager, PermissionParser};
+use pocketmine\permission\{Permission, PermissionManager, PermissionParser};
 use MihaiChirculete\WorldGuard\ResourceUtils\ResourceManager;
 use MihaiChirculete\WorldGuard\ResourceUtils\ResourceUpdater;
 
-class WorldGuard extends PluginBase
-{
+class WorldGuard extends PluginBase{
 
     const FLAGS = [
         "pluginbypass" => "false",
@@ -53,6 +52,7 @@ class WorldGuard extends PluginBase
         "blocked-cmds" => [],
         "allowed-cmds" => [],
         "use" => "false",
+        "interactframe" => "false",
         "item-drop" => "true",
         "item-by-death" => "true",
         "explosion" => "false",
@@ -95,6 +95,7 @@ class WorldGuard extends PluginBase
         "blocked-cmds" => "array",
         "allowed-cmds" => "array",
         "use" => "boolean",
+        "interactframe" => "boolean",
         "item-drop" => "boolean",
         "item-by-death" => "boolean",
         "explosion" => "boolean",
@@ -126,25 +127,27 @@ class WorldGuard extends PluginBase
     const FLY_DISABLE = 2;
     const FLY_SUPERVISED = 3;
 
-    public $creating = [];
-    private $process = [];
-    private $regions = [];
-    public $extended = [];
+    public array $creating = [];
+    private array $process = [];
+    private array $regions = [];
+    public array $extended = [];
 
     /**
      * @return array
      */
-    public function getRegions(): array
-    {
+    public function getRegions(): array{
         return $this->regions;
     }
 
-    private $players = [];
-    public $muted = [];
+    private array $players = [];
+    public array $muted = [];
 
     public $resourceManager = null;
     public $resourceUpdater = null;
 
+    /**
+     * @return void
+     */
     public function onEnable(): void{
         $this->getLogger()->info("
  __        __                 _       _    ____                              _ 
@@ -161,80 +164,91 @@ class WorldGuard extends PluginBase
 
 
         $regions = $this->resourceManager->getRegions();
-        if (isset($regions)) {
-            foreach ($regions as $name => $data) {
+        if(isset($regions)){
+            foreach($regions as $name => $data){
                 $this->regions[$name] = new Region($name, $data["pos1"], $data["pos2"], $data["level"], $data["flags"]);
             }
         }
         $this->getServer()->getPluginManager()->registerEvents(new EventListener($this), $this);
-        foreach ($this->getServer()->getOnlinePlayers() as $p) {
+        foreach($this->getServer()->getOnlinePlayers() as $p){
             $this->sessionizePlayer($p);
         }
     }
 
-    public function onDisable(): void
-    {
+    /**
+     * @return void
+     */
+    public function onDisable(): void{
         $this->resourceManager->saveRegions($this->regions);
     }
 
-    public function getRegion(string $region)
-    {
+    public function getRegion(string $region){
         return $this->regions[$region] ?? "";
     }
 
-    public function getRegionByPlayer(Player $player)
-    {
-        if ($player instanceof Player) {
+
+    public function getRegionByPlayer(Player $player){
+        if($player instanceof Player){
             $reg = $this->getRegionOf($player);
             return $reg !== "" ? $this->getRegion($reg) : "";
         }
     }
 
-    public function getRegionOf(Player $player): string
-    {
-        if ($player instanceof Player) {
+    public function getRegionOf(Player $player): string{
+        if($player instanceof Player){
             return $this->players[$player->getUniqueId()->getBytes()] ?? "";
         }
     }
 
-    public function regionExists(string $name): bool
-    {
+    /**
+     * @param string $name
+     * @return boolean
+     */
+    public function regionExists(string $name): bool{
         return isset($this->regions[$name]);
     }
 
-    public function flagExists(string $flag): bool
-    {
+    /**
+     * @param string $flag
+     * @return boolean
+     */
+    public function flagExists(string $flag): bool{
         return isset(self::FLAGS[$flag]);
     }
 
-    public function sessionizePlayer(Player $player)
-    {
+    /**
+     * @param Player $player
+     * @return void
+     */
+    public function sessionizePlayer(Player $player): void{
         $this->players[$player->getUniqueId()->getBytes()] = "";
         $this->updateRegion($player);
     }
 
-    public function getRegionFromPosition(Position $pos)
-    {
+    public function getRegionFromPosition(Position $pos){
         $name = $this->getRegionNameFromPosition($pos);
         return $name !== "" ? $this->getRegion($name) : "";
     }
 
-    public function getRegionNameFromPosition(Position $pos): string
-    {
+    /**
+     * @param Position $pos
+     * @return string
+     */
+    public function getRegionNameFromPosition(Position $pos): string{
         $currentRegion = "";
         $highestPriority = -1;
         //$global = new Position(0,0,0,$pos->getLevel());
-        foreach ($this->regions as $name => $region) {
-            if ($region->getLevelName() === $pos->getWorld()->getDisplayName()) {
+        foreach ($this->regions as $name => $region){
+            if($region->getLevelName() === $pos->getWorld()->getDisplayName()){
                 $reg1 = $region->getPos1();
                 $reg2 = $region->getPos2();
                 $x = array_flip(range($reg1[0], $reg2[0]));
-                if (isset($x[$pos->x])) {
+                if(isset($x[(int) $pos->getX()])){
                     $y = array_flip(range($reg1[1], $reg2[1]));
-                    if (isset($y[$pos->y])) {
+                    if(isset($y[(int) $pos->getY()])){
                         $z = array_flip(range($reg1[2], $reg2[2]));
-                        if (isset($z[$pos->z])) {
-                            if ($highestPriority < intval($region->getFlag("priority"))) {
+                        if(isset($z[(int) $pos->getZ()])){
+                            if($highestPriority < intval($region->getFlag("priority"))){
                                 $highestPriority = intval($region->getFlag("priority"));
                                 $currentRegion = $name;
                             }
@@ -243,133 +257,141 @@ class WorldGuard extends PluginBase
                 }
             }
         }
-        if ($currentRegion == "") {
-            if ($this->regionExists("global." . $pos->getWorld()->getDisplayName())) {
+        if($currentRegion == ""){
+            if($this->regionExists("global." . $pos->getWorld()->getDisplayName())){
                 $currentRegion = "global." . $pos->getWorld()->getDisplayName();
             }
         }
         return $currentRegion;
     }
 
-    public function onPlayerLogoutRegion(Player $player)
-    {
-        //if player is loggedIn in WG Region and Logout
+    /**
+     * @param Player $player
+     * @return void
+     */
+    public function onPlayerLogoutRegion(Player $player): void{
+        //ifplayer is loggedIn in WG Region and Logout
         $wgReg = $this->getRegion($player);
-        if ($player instanceof Player && $wgReg !== "") {
+        if($player instanceof Player && $wgReg !== ""){
             $player->getEffects()->clear();
-            if ($this->resourceManager->getConfig()["debugging"] === true) {
+            if($this->resourceManager->getConfig()["debugging"] === true){
                 $this->getLogger()->info("Instance of player is in WorldGuard Region! Effects from Region should be deleted");
             }
         }
     }
 
-    public function onRegionChange(Player $player, string $oldregion, string $newregion)
-    {
+    /**
+     * @param Player $player
+     * @param string $oldregion
+     * @param string $newregion
+     * @return boolean
+     */
+    public function onRegionChange(Player $player, string $oldregion, string $newregion): bool{
         $new = $this->getRegion($newregion);
         $old = $this->getRegion($oldregion);
 
-        if ($player instanceof Player) {
-            if ($this->resourceManager->getConfig()["debugging"] === true) {
-                if (gettype($new) === "string") {
+        if($player instanceof Player){
+            if($this->resourceManager->getConfig()["debugging"] === true){
+                if(gettype($new) === "string"){
                     $this->getLogger()->info("New Region is empty");
-                } else {
+                } else{
                     $this->getLogger()->info("New Region: " . $new->getName());
                 }
             }
-            if ($this->resourceManager->getConfig()["debugging"] === true) {
-                if (gettype($old) === "string") {
+            if($this->resourceManager->getConfig()["debugging"] === true){
+                if(gettype($old) === "string"){
                     $this->getLogger()->info("Old Region is empty");
-                } else {
+                } else{
                     $this->getLogger()->info("Old Region: " . $old->getName());
                 }
             }
-            if ($old !== "") {
-                if ($old->getFlag("console-cmd-on-leave") !== "none") {
+            if($old !== ""){
+                if($old->getFlag("console-cmd-on-leave") !== "none"){
                     $cmd = str_replace("%player%", $player->getName(), $old->getFlag("console-cmd-on-leave"));
                     $player->getServer()->dispatchCommand(new ConsoleCommandSender(Server::getInstance(), Server::getInstance()->getLanguage()), $cmd);
                 }
-                if ($old->getFlag("allowed-leave") === "false") {
-                    if (!$player->hasPermission("worldguard.leave." . $oldregion)) {
+                if($old->getFlag("allowed-leave") === "false"){
+                    if(!$player->hasPermission("worldguard.leave." . $oldregion)){
                         $player->sendMessage(TF::RED . $this->resourceManager->getMessages()["denied-leave"]);
                         return false;
                     }
                 }
-                if (($msg = $old->getFlag("notify-leave")) !== "") {
+                if(($msg = $old->getFlag("notify-leave")) !== ""){
                     $player->sendTip(Utils::aliasParse($player, $msg));
                 }
-                if ($old->getFlag("receive-chat") === "false") {
+                if($old->getFlag("receive-chat") === "false"){
                     unset($this->muted[$player->getUniqueId()->getBytes()]);
                 }
 
-                if ($old != null) {
+                if($old != null){
                     $oldRegionEffects = $old->getEffects();
-                } else {
+                } else{
                     $oldRegionEffects = null;
                 }
                 // Iterate all old effects and remove them
-                if (!empty($oldRegionEffects) && $oldRegionEffects != null) {
-                    if ($this->resourceManager->getConfig()["debugging"] === true) {
+                if(!empty($oldRegionEffects) && $oldRegionEffects != null){
+                    if($this->resourceManager->getConfig()["debugging"] === true){
                         echo "effect: " . var_export($effect, true) . "effectflag: " . var_export($rgEffects, true);
                     }
-                    foreach ($oldRegionEffects as $effect) {
+                    foreach ($oldRegionEffects as $effect){
                         $player->getEffects()->remove($effect->getType());
 
                     }
                 }
 
 
-                if ($old->getFlight() === self::FLY_SUPERVISED) {
-                    if ($player->getGamemode() !== GameMode::CREATIVE()) {
+                if($old->getFlight() === self::FLY_SUPERVISED){
+                    if($player->getGamemode() !== GameMode::CREATIVE()){
                         Utils::disableFlight($player);
                     }
                 }
             }
 
-            if ($new !== "") {
-                if ($new->getFlag("console-cmd-on-enter") !== "none") {
+            if($new !== ""){
+                if($new->getFlag("console-cmd-on-enter") !== "none"){
                     $cmd = str_replace("%player%", $player->getName(), $new->getFlag("console-cmd-on-enter"));
                     $player->getServer()->dispatchCommand(new ConsoleCommandSender(Server::getInstance(), Server::getInstance()->getLanguage()), $cmd);
                 }
 
-                if ($new->getFlag("allowed-enter") === "false") {
-                    if (!$player->hasPermission("worldguard.enter." . $newregion)) {
+                if($new->getFlag("allowed-enter") === "false"){
+                    if(!$player->hasPermission("worldguard.enter." . $newregion)){
                         $player->sendMessage(TF::RED . $this->resourceManager->getMessages()["denied-enter"]);
                         return false;
                     }
                 }
-                if (($gm = $new->getGamemode()) !== $player->getGamemode()) {
-                    if (!$player->hasPermission("worldguard.bypass.gamemode." . $newregion) and !$player->hasPermission("worldguard.bypass.gamemode")) {
-                        if ($gm !== "false") {
-                            if ($gm == "0" || $gm == "1" || $gm == "2" || $gm == "3") {
+                if(($gm = $new->getGamemode()) !== $player->getGamemode()){
+                    if(!$player->hasPermission("worldguard.bypass.gamemode." . $newregion) and !$player->hasPermission("worldguard.bypass.gamemode")){
+                        if($gm !== "false"){
+                            if($gm == "0" || $gm == "1" || $gm == "2" || $gm == "3"){
                                 $player->setGamemode($gm);
-                                if ($gm === 0 || $gm === 2) Utils::disableFlight($player);
-                            } else if ($gm == "creative") {
+                                if($gm === 0 || $gm === 2) Utils::disableFlight($player);
+                            } else if($gm == "creative"){
                                 $player->setGamemode(GameMode::CREATIVE());
-                            } else if ($gm == "survival") {
+                            } else if($gm == "survival"){
                                 $player->setGamemode(GameMode::SURVIVAL());
                                 Utils::disableFlight($player);
-                            } else if ($gm == "adventure") {
+                            } else if($gm == "adventure"){
                                 $player->setGamemode(GameMode::ADVENTURE());
                                 Utils::disableFlight($player);
-                            } else if ($gm == "spectator") {
+                            } else if($gm == "spectator"){
                                 $player->setGamemode(GameMode::SPECTATOR());
                             }
                         }
                     }
                 }
-                if (($msg = $new->getFlag("notify-enter")) !== "") {
+                if(($msg = $new->getFlag("notify-enter")) !== ""){
                     $player->sendTip(Utils::aliasParse($player, $msg));
                 }
-                if ($new->getFlag("receive-chat") === "false") {
+                if($new->getFlag("receive-chat") === "false"){
                     $this->muted[$player->getUniqueId()->getBytes()] = $player;
                 }
-                if (!$player->hasPermission("worldguard.bypass.fly." . $newregion)) {
-                    if (($flight = $new->getFlight()) !== self::FLY_VANILLA) {
-                        if ($player->getGamemode() !== Gamemode::CREATIVE()) {
-                            switch ($flight) {
+                if(!$player->hasPermission("worldguard.bypass.fly." . $newregion)){
+                    if(($flight = $new->getFlight()) !== self::FLY_VANILLA){
+                        if($player->getGamemode() !== Gamemode::CREATIVE()){
+                            switch($flight){
                                 case self::FLY_ENABLE:
                                 case self::FLY_SUPERVISED:
-                                    if (!$player->getAllowFlight()) {
+                                    if(!$player->getAllowFlight()){
                                         $player->setAllowFlight(true);
                                     }
                                     break;
@@ -383,79 +405,57 @@ class WorldGuard extends PluginBase
                 //
                 // EFFECTS
                 //
-                if (!empty($new)) {
+                if(!empty($new)){
                     $newRegionEffects = $new->getEffects();
-                } else {
+                } else{
                     $newRegionEffects = null;
                 }
 
-                if ($old != null) {
+                if($old != null){
                     $oldRegionEffects = $old->getEffects();
-                } else {
+                } else{
                     $oldRegionEffects = null;
                 }
                 // Iterate all old effects and remove them
-                if (!empty($oldRegionEffects) && $oldRegionEffects != null) {
-                    if ($this->resourceManager->getConfig()["debugging"] === true) {
+                if(!empty($oldRegionEffects) && $oldRegionEffects != null){
+                    if($this->resourceManager->getConfig()["debugging"] === true){
                         $this->getLogger()->info("Removing region-given effects, and re-adding any effects the player had.");
                     }
-                    foreach ($oldRegionEffects as $effect) {
+                    foreach ($oldRegionEffects as $effect){
                         $player->getEffects()->remove($effect->getType());
 
                     }
                 }
 
                 // Iterate all new effects and add them
-                if (!empty($newRegionEffects) && $newRegionEffects != null) {
-                    if ($this->resourceManager->getConfig()["debugging"] === true) {
+                if(!empty($newRegionEffects) && $newRegionEffects != null){
+                    if($this->resourceManager->getConfig()["debugging"] === true){
                         $this->getLogger()->info("Saving the player's current effects that the region overwrites, and giving the new effects from the region.");
                     }
-                    foreach ($newRegionEffects as $effect) {
+                    foreach ($newRegionEffects as $effect){
                         $player->getEffects()->add($effect);
                     }
                 }
             }
-
-            /*
-            if($new !== "")
-            {
-                if(($time = $new->getFlag("freeze-time")) !== -1 )
-                {
-                    $pk = new SetTimePacket();
-                    $pk->time = intval($time);
-                    $player->dataPacket($pk);
-                }
-                else
-                {
-                    $pk = new SetTimePacket();
-                    $pk->time = intval($this->getServer()->getTick());
-                    $player->dataPacket($pk);
-                }
-            }
-            else
-            {
-                $pk = new SetTimePacket();
-                $pk->time = intval($this->getServer()->getTick());
-                $player->dataPacket($pk);
-            }
-            */
         }
         return true;
     }
 
-    public function updateRegion(Player $player)
-    {
+    /**
+     * @param Player $player
+     * @return boolean
+     */
+    public function updateRegion(Player $player): bool{
         $region = $this->players[$id = $player->getUniqueId()->getBytes()];
-        if (($newRegion = $this->getRegionNameFromPosition($player->getPosition())) !== $region) {
+        if(($newRegion = $this->getRegionNameFromPosition($player->getPosition())) !== $region){
             $this->players[$id] = $newRegion;
             return $this->onRegionChange($player, $region, $newRegion);
         }
         return true;
     }
 
-    public function processCreation(Player $player)
-    {
-        if (isset($this->creating[$id = $player->getUniqueId()->getBytes()], $this->process[$id])) {
+    public function processCreation(Player $player){
+        if(isset($this->creating[$id = $player->getUniqueId()->getBytes()], $this->process[$id])){
             $name = $this->process[$id];
             $map = $this->creating[$id];
             $level = $map[0][3];
@@ -531,84 +531,88 @@ class WorldGuard extends PluginBase
 
             $permission = new Permission("worldguard.usebutton." . $name, "Allows player to use buttons in " . $name . " region.", [PermissionParser::DEFAULT_OP]);
             PermissionManager::getInstance()->addPermission($permission);
+            
+            $permission = new Permission("worldguard.interactframe." . $name, "Allows player to interact with frames in " . $name . " region.", [PermissionParser::DEFAULT_OP]);
+            PermissionManager::getInstance()->addPermission($permission);
             $this->resourceManager->saveRegions($this->regions);
             return $name;
         }
         return false;
     }
 
-    public function onCommand(CommandSender $issuer, Command $cmd, string $label, array $args): bool
-    {
-        switch (strtolower($cmd->getName())) {
+    public function onCommand(CommandSender $issuer, Command $cmd, string $label, array $args): bool{
+        switch (strtolower($cmd->getName())){
             case "worldguard":
-                if (!$issuer->hasPermission("worldguard.ui")) {
+                if(!$issuer->hasPermission("worldguard.ui")){
                     $issuer->sendMessage($this->resourceManager->getMessages()["no-permission-for-command"]);
                     return false;
                 }
-                if ($issuer instanceof Player) {
+                if($issuer instanceof Player){
                     GUI::displayMenu($issuer);
                 }
                 break;
             case "region":
-                if (!$issuer->hasPermission("worldguard.create") || !$issuer->hasPermission("worldguard.modify") || !$issuer->hasPermission("worldguard.delete")) {
+                if(!$issuer->hasPermission("worldguard.create") || !$issuer->hasPermission("worldguard.modify") || !$issuer->hasPermission("worldguard.delete")){
                     $issuer->sendMessage($this->resourceManager->getMessages()["no-permission-for-command"]);
                     return false;
                 }
-                if (isset($args[0])) {
-                    switch ($args[0]) {
+                if(isset($args[0])){
+                    switch ($args[0]){
                         case "setbiome":
-                            if (!$issuer->hasPermission("worldguard.modify")) {
+                            if(!$issuer->hasPermission("worldguard.modify")){
                                 $issuer->sendMessage($this->resourceManager->getMessages()["no-permission-for-command"]);
                                 return false;
                             }
-                            if (isset($args[1]) && isset($args[2])) {
-                                if (!ctype_alnum($args[1])) {
+                            if(isset($args[1]) && isset($args[2])){
+                                if(!ctype_alnum($args[1])){
                                     $issuer->sendMessage(TF::RED . 'Region name must be alpha numeric.');
                                     return false;
                                 }
-                                if ($this->regionExists($args[1])) {
+                                if($this->regionExists($args[1])){
                                     Utils::setBiome($this, $this->getRegion($args[1]), $args[2]);
                                     $issuer->sendMessage(TF::YELLOW . 'You have changed the region\'s biome.');
                                     $this->resourceManager->saveRegions($this->regions);
-                                } else {
+                                } else{
                                     $issuer->sendMessage(TF::RED . $args[1] . ' region does not exist. Use /region list to get a list of all regions.');
                                 }
-                            } else {
+                            } else{
                                 $issuer->sendMessage(TF::RED . '/region setbiome <name> <biome_name>');
                             }
                             break;
                         case "create":
-                            if (!$issuer->hasPermission("worldguard.create")) {
+                            if(!$issuer->hasPermission("worldguard.create")){
                                 $issuer->sendMessage($this->resourceManager->getMessages()["no-permission-for-command"]);
                                 return false;
                             }
-                            if (isset($args[1])) {
-                                if (!ctype_alnum($args[1])) {
+                            if(isset($args[1])){
+                                if(!ctype_alnum($args[1])){
                                     $issuer->sendMessage(TF::RED . 'Region names cannot contain special characters.');
                                     return false;
                                 }
-                                if ($this->regionExists($args[1])) {
+                                if($this->regionExists($args[1])){
                                     $issuer->sendMessage(TF::RED . 'This region already exists. Redefine it using /region redefine ' . $args[1] . ', or remove it using /region remove ' . $args[1]);
                                     return false;
-                                } else {
-                                    if (isset($args[2])) {
-                                        if ($args[2] == "extended") {
-                                            unset($this->creating[$id = $issuer->getUniqueId()->getBytes()], $this->process[$id]);
-                                            $this->creating[$id] = [];
-                                            $this->process[$id] = $args[1];
-                                            $this->extended[$id] = [];
-                                            $issuer->sendMessage(TF::YELLOW . 'Right-Click two positions to complete creating the extended region (' . $args[1] . ').');
-                                        } else {
+                                } else{
+                                    if(isset($args[2])){
+                                        if($args[2] == "extended"){
+                                            if($issuer instanceof Player){
+                                                unset($this->creating[$id = $issuer->getUniqueId()->getBytes()], $this->process[$id]);
+                                                $this->creating[$id] = [];
+                                                $this->process[$id] = $args[1];
+                                                $this->extended[$id] = [];
+                                                $issuer->sendMessage(TF::YELLOW . 'Right-Click two positions to complete creating the extended region (' . $args[1] . ').');
+                                            }
+                                        } else{
                                             $issuer->sendMessage(TF::RED . "Flag '" . $args[2] . "' not recognized.");
                                             return false;
                                         }
-                                    } else {
-                                        if ($args[1] == "global") {
-                                            if ($issuer instanceof Player) {
-                                                if ($this->regionExists($args[1] . "." . $issuer->getWorld()->getDisplayName())) {
+                                    } else{
+                                        if($args[1] == "global"){
+                                            if($issuer instanceof Player){
+                                                if($this->regionExists($args[1] . "." . $issuer->getWorld()->getDisplayName())){
                                                     $issuer->sendMessage(TF::RED . "A global region for this world already exists!");
                                                     return false;
-                                                } else {
+                                                } else{
                                                     unset($this->creating[$id = $issuer->getUniqueId()->getBytes()], $this->process[$id]);
                                                     $this->process[$id] = ("global." . $issuer->getWorld()->getDisplayName());
                                                     $this->creating[$id][] = [0, 0, 0, $issuer->getWorld()->getDisplayName()];
@@ -617,118 +621,122 @@ class WorldGuard extends PluginBase
                                                     $issuer->sendMessage(TF::GREEN . "Global region for world " . $issuer->getWorld()->getDisplayName() . " created.");
                                                 }
                                             }
-                                        } else {
-                                            unset($this->creating[$id = $issuer->getUniqueId()->getBytes()], $this->process[$id]);
-                                            $this->creating[$id] = [];
-                                            $this->process[$id] = $args[1];
-                                            $issuer->sendMessage(TF::YELLOW . 'Right-Click two positions to complete creating the region (' . $args[1] . ').');
+                                        } else{
+                                            if($issuer instanceof Player){
+                                                unset($this->creating[$id = $issuer->getUniqueId()->getBytes()], $this->process[$id]);
+                                                $this->creating[$id] = [];
+                                                $this->process[$id] = $args[1];
+                                                $issuer->sendMessage(TF::YELLOW . 'Right-Click two positions to complete creating the region (' . $args[1] . ').');
+                                            }
                                         }
                                     }
                                 }
-                            } else {
+                            } else{
                                 $issuer->sendMessage(TF::RED . '/region create <name>');
                             }
                             break;
                         case "delete":
-                            if (!$issuer->hasPermission("worldguard.delete")) {
+                            if(!$issuer->hasPermission("worldguard.delete")){
                                 $issuer->sendMessage($this->resourceManager->getMessages()["no-permission-for-command"]);
                                 return false;
                             }
-                            if (isset($args[1])) {
-                                if ($this->regionExists($args[1])) {
+                            if(isset($args[1])){
+                                if($this->regionExists($args[1])){
                                     unset($this->regions[$args[1]]);
-                                    foreach ($this->getServer()->getOnlinePlayers() as $player) {
+                                    foreach ($this->getServer()->getOnlinePlayers() as $player){
                                         $this->updateRegion($player);
                                     }
                                     $issuer->sendMessage(TF::YELLOW . 'You have deleted the region: ' . $args[1]);
                                     $this->resourceManager->saveRegions($this->regions);
-                                } else {
+                                } else{
                                     $issuer->sendMessage(TF::RED . $args[1] . ' region does not exist. Use /region list to get a list of all regions.');
                                 }
-                            } else {
+                            } else{
                                 $issuer->sendMessage(TF::RED . '/region delete <name>');
                             }
                             break;
                         case "list":
                             $msg = TF::LIGHT_PURPLE . "Regions: \n" . TF::LIGHT_PURPLE;
-                            if (empty($this->regions)) {
+                            if(empty($this->regions)){
                                 $msg .= "You haven't created any regions yet. Use /region create <name> to create your first region.";
-                            } else {
+                            } else{
                                 $msg .= implode(TF::WHITE . ', ' . TF::LIGHT_PURPLE, array_keys($this->regions));
                             }
                             $issuer->sendMessage($msg);
                             break;
                         case "info":
-                            if ($issuer instanceof Player) {
+                            if($issuer instanceof Player){
                                 $reg = $this->getRegionOf($issuer);
-                                if ($reg !== "") {
+                                if($reg !== ""){
                                     $issuer->chat("/rg flags get " . $reg);
                                     return true;
-                                } else {
+                                } else{
                                     $issuer->sendMessage(TF::RED . "You are not currently standing in any regions.");
                                     return false;
                                 }
                             }
                             break;
                         case "redefine":
-                            if (!isset($args[1])) {
+                            if(!isset($args[1])){
                                 $issuer->sendMessage(TF::RED . '/region redefine <region>');
                                 return false;
-                            } else {
-                                if (!$this->regionExists($args[1])) {
+                            } else{
+                                if(!$this->regionExists($args[1])){
                                     $issuer->sendMessage(TF::RED . $args[1] . ' region does not exist. Use /region list to get a list of all regions.');
                                     return false;
-                                } else {
-                                    unset($this->creating[$id = $issuer->getUniqueId()->getBytes()], $this->process[$id]);
-                                    $this->creating[$id] = [];
-                                    $this->process[$id] = $args[1];
-                                    $issuer->sendMessage(TF::LIGHT_PURPLE . 'Right-Click two positions to redefine your region (' . $args[1] . ').');
+                                } else{
+                                    if($issuer instanceof Player){
+                                        unset($this->creating[$id = $issuer->getUniqueId()->getBytes()], $this->process[$id]);
+                                        $this->creating[$id] = [];
+                                        $this->process[$id] = $args[1];
+                                        $issuer->sendMessage(TF::LIGHT_PURPLE . 'Right-Click two positions to redefine your region (' . $args[1] . ').');
+                                    }
                                 }
                             }
                             break;
                         case "getplayer":
-                            if (isset($args[1])) {
-                                if (($player = $this->getServer()->getPlayerExact($args[1])) !== null) {
+                            if(isset($args[1])){
+                                if(($player = $this->getServer()->getPlayerExact($args[1])) !== null){
                                     $reg = $this->getRegionOf($player);
-                                    if ($reg !== "") {
+                                    if($reg !== ""){
                                         $issuer->sendMessage(TF::YELLOW . $player->getName() . ' is in ' . $reg . '.');
-                                    } else {
+                                    } else{
                                         $issuer->sendMessage(TF::YELLOW . $player->getName() . 'is not in any region.');
                                     }
-                                } else {
+                                } else{
                                     $issuer->sendMessage(TF::RED . $args[1] . ' is offline.');
                                 }
-                            } else {
+                            } else{
                                 $issuer->sendMessage(TF::RED . '/region getplayer <player>');
                             }
                             break;
                         case "flag":
                         case "flags":
-                            if (!$issuer->hasPermission("worldguard.modify")) {
+                            if(!$issuer->hasPermission("worldguard.modify")){
                                 $issuer->sendMessage($this->resourceManager->getMessages()["no-permission-for-command"]);
                                 return false;
                             }
-                            if (isset($args[1], $args[2])) {
-                                if (!$this->regionExists($args[2])) {
+                            if(isset($args[1], $args[2])){
+                                if(!$this->regionExists($args[2])){
                                     $issuer->sendMessage(TF::RED . 'The specified region does not exist. Use /region list to get a list of all regions.');
                                     return false;
                                 }
-                                if ($args[1] !== "get") {
-                                    if (!isset($args[3])) {
+                                if($args[1] !== "get"){
+                                    if(!isset($args[3])){
                                         $issuer->sendMessage(TF::RED . "You haven't specified the <flag>.");
                                         return false;
-                                    } elseif (!$this->flagExists($args[3])) {
+                                    } elseif(!$this->flagExists($args[3])){
                                         $issuer->sendMessage(TF::RED . "The specified flag does not exist. Available flags:\n" . TF::LIGHT_PURPLE . implode(TF::WHITE . ', ' . TF::LIGHT_PURPLE, array_keys(self::FLAGS)));
                                         return false;
                                     }
                                 }
-                                switch ($args[1]) {
+                                switch ($args[1]){
                                     case "get":
                                         $flags = $this->getRegion($args[2])->getFlagsString();
                                         $issuer->sendMessage(TF::LIGHT_PURPLE . $args[2] . "'s flags:\n" . $flags);
                                         break;
                                     case "set":
-                                        if (!isset($args[4])) {
+                                        if(!isset($args[4])){
                                             return false;
                                         }
                                         $args[4] = str_replace("allow", "true", $args[4]);
@@ -736,7 +744,7 @@ class WorldGuard extends PluginBase
                                         $val = $args;
                                         unset($val[0], $val[1], $val[2], $val[3]);
                                         $opt = $this->getRegion($args[2])->setFlag($args[3], array_values($val));
-                                        if ($opt == null) {
+                                        if($opt == null){
                                             $issuer->sendMessage(TF::YELLOW . 'Flag has been updated successfully.');
                                             $this->resourceManager->saveRegions($this->regions);
                                         }
@@ -747,12 +755,12 @@ class WorldGuard extends PluginBase
                                         $this->resourceManager->saveRegions($this->regions);
                                         break;
                                 }
-                            } else {
-                                $issuer->sendMessage(TF::RED . "/region flags <get/set/reset> <region> <flag> <value>\n" . TF::GRAY . '<value> argument is only needed if you are setting the flag.');
+                            } else{
+                                $issuer->sendMessage(TF::RED . "/region flags <get/set/reset> <region> <flag> <value>\n" . TF::GRAY . '<value> argument is only needed ifyou are setting the flag.');
                             }
                             break;
                     }
-                } else {
+                } else{
                     $issuer->sendMessage(implode("\n" . TF::LIGHT_PURPLE, [
                             "§9§lWorldGuard ("]) . $this->getServer()->getVersion() . implode("\n" . TF::LIGHT_PURPLE, [") §r§9Help Page §7(by Chalapa)",
                             " ",
@@ -772,8 +780,7 @@ class WorldGuard extends PluginBase
         return true;
     }
 
-    public function getKnockback()
-    {
+    public function getKnockback(){
         return $this->resourceManager->getConfig()["knockback"];
     }
 }

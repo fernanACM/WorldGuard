@@ -28,6 +28,7 @@ gui_flag_xp_drops: Erlaube Erfahrungspunkte
 gui_flag_invincible: Erlaube den Effekt Unsichtbarkeit
 gui_flag_fall_dmg: Erlaube Fallschaden
 gui_flag_usage: 'Erlaube das Benutzen (Kisten, Werkbank, o.Ä.)'
+gui_flag_interactframe: "Interact with frames"
 gui_flag_item_drop: 'Erlaube Gegenstände fallenzulassen'
 gui_flag_explosions: Erlaube Explosionen
 gui_flag_notify_enter: 'Meldung für das Betreten'
@@ -43,6 +44,7 @@ gui_flag_sleep: Erlaube das Schlafen
 gui_flag_send_chat: Erlaube das Schreiben von Nachrichten im Chat
 gui_flag_rcv_chat: Erlaube das Erhalten von Nachrichten im Chat
 gui_flag_enderpearl: Erlaube das Verwenden von Ender Perlen
+gui_flag_bow: Erlaube das Verwenden von bow
 gui_flag_fly_mode: Flugmodus
 gui_enabled: Aktiviert
 gui_disabled: Deaktiviert

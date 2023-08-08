@@ -25,6 +25,7 @@ gui_flag_xp_drops: Chute d'XP
 gui_flag_invincible: Invincible
 gui_flag_fall_dmg: "D\xE9g\xE2ts de chute"
 gui_flag_usage: Utilisation
+gui_flag_interactframe: "Interact with frames"
 gui_flag_item_drop: Chute d'items
 gui_flag_explosions: Autoriser les explosions
 gui_flag_notify_enter: Notifiez entrer
@@ -40,6 +41,7 @@ gui_flag_sleep: Autoriser de dormir
 gui_flag_send_chat: Autoriser l'envoi de messages dans le chat
 gui_flag_rcv_chat: Autoriser de recevoir des messages du chat
 gui_flag_enderpearl: Autoriser l'utilisation des ender pearl
+gui_flag_bow: Autoriser l'utilisation des bow
 gui_flag_fly_mode: Mode vol
 gui_enabled: "Activ\xE9"
 gui_disabled: "D\xE9sactiver"

@@ -29,6 +29,7 @@ gui_flag_xp_drops: Experience drops
 gui_flag_invincible: Invincible
 gui_flag_fall_dmg: Fall damage
 gui_flag_usage: Use
+gui_flag_interactframe: "Interact with frames"
 gui_flag_item_drop: Item drop
 gui_flag_item_death_drop: Item drop by death
 gui_flag_explosions: Explosions
@@ -57,9 +58,9 @@ gui_flag_plant_growth: Allow plant growth
 gui_flag_spread: Allow spreading
 gui_flag_block_burn: Allow block burn
 gui_flag_priority: Region priority
-gui_help_menu_label1: 'If you need help setting up WorldGuard, you can
+gui_help_menu_label1: 'If you need help setting up WorldGuard by fernanACM, you can
 contact us on Discord for help:'
-gui_help_menu_label2: 'https://discord.com/invite/uZevqGX'
+gui_help_menu_label2: 'https://discord.gg/YyE9XFckqb'
 gui_flag_effect: Effects
 gui_effect_delete: Delete all Effects
 gui_effect_speed: Speed

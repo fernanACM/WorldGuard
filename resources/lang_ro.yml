@@ -23,6 +23,7 @@ gui_flag_xp_drops: Dropuri de experienta
 gui_flag_invincible: Invincibilitate
 gui_flag_fall_dmg: Damage la cadere
 gui_flag_usage: Utilizarea blockurilor (usi, butoane, etc...)
+gui_flag_interactframe: "Interact with frames"
 gui_flag_item_drop: Dropuri de iteme
 gui_flag_explosions: Explozii
 gui_flag_notify_enter: Notificare intrare
@@ -37,6 +38,7 @@ gui_flag_sleep: Permite dormitul
 gui_flag_send_chat: Permite trimiterea mesajelor
 gui_flag_rcv_chat: Permite primirea mesajelor
 gui_flag_enderpearl: Permite folosirea de enderpearl
+gui_flag_bow: Permite folosirea de bow
 gui_flag_fly_mode: Mod zbor
 gui_enabled: Activat
 gui_disabled: Dezactivat

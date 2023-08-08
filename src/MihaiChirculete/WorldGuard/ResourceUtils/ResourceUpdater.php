@@ -23,26 +23,30 @@ class ResourceUpdater
 
         $this->defaultConfig = array(
             "version" => $this->resourceManagerInstance->getPluginVersion(),
-            "language to use" => "you could use de, fr, en, ro, tr zhsimp or zhtrad. (zhtrad is for traditional chinese, zhsimp for simplified chinese) if the file does not exist, it will create a default en file!",
+            "language to use" => "you could use spa, de, fr, en, ro, tr zhsimp or zhtrad. (zhtrad is for traditional chinese, zhsimp for simplified chinese) if the file does not exist, it will create a default en file!",
             "language" => "en",
             "knockback" => 4,
             "debugging" => false);
 
         $this->defaultMessages = array(
             "version" => $this->resourceManagerInstance->getPluginVersion(),
-            "denied-enter" => "You cannot enter this area.",
-            "denied-leave" => "You cannot leave this area.",
-            "no-permission-for-command" => "You do not have permission to use this command.",
-            "denied-eat" => "You cannot eat in this area.",
-            "denied-ender-pearls" => "You cannot use ender pearls in this area.",
-            "denied-chat" => "You cannot chat in this region.",
-            "denied-item-drop" => "You cannot drop items in this region.",
-            "denied-item-death-drop" => "In this region is item dropping by death disabled.",
-            "denied-pvp" => "You cannot hurt players of this region.",
-            "denied-block-break" => "You cannot break blocks in this region.",
-            "denied-block-place" => "You cannot place blocks in this region.",
-            "denied-hurt-animal" => "You cannot hurt animals of this region.",
-            "denied-hurt-monster" => "You cannot hurt monsters of this region."
+            "denied-enter" => "§l§cHey!§r§7 You cannot enter this area.",
+            "denied-leave" => "§l§cHey!§r§7 You cannot leave this area.",
+            "no-permission-for-command" => "§l§cHey!§r§7 You do not have permission to use this command.",
+            "denied-eat" => "§l§cHey!§r§7 You cannot eat in this area.",
+            "denied-ender-pearls" => "§l§cHey!§r§7 You cannot use ender pearls in this area.",
+            "denied-bow" => "§l§cHey!§r§7 You cannot use bow in this area.",
+            "denied-chat" => "§l§cHey!§r§7 You cannot chat in this area.",
+            "denied-item-drop" => "§l§cHey!§r§7 You cannot drop items in this region.",
+            "denied-item-death-drop" => "§l§cHey!§r§7 In this area is item dropping by death disabled.",
+            "denied-item-interact" => "§l§cHey!§r§7 You cannot use {ITEM_NAME} in this area.",
+            "denied-item-use" => "§l§cHey!§r§7 You cannot use {ITEM_NAME} in this area.",
+            "denied-pvp" => "§l§cHey!§r§7 You cannot hurt players of this region.",
+            "denied-block-break" => "§l§cHey!§r§7 You cannot break blocks in this area.",
+            "denied-block-place" => "§l§cHey!§r§7 You cannot place blocks in this area.",
+            "denied-block-interact" => "§l§cHey!§r§7 You cannot interact with {BLOCK_NAME} in this area.",
+            "denied-hurt-animal" => "§l§cHey!§r§7 You cannot hurt animals of this area.",
+            "denied-hurt-monster" => "§l§cHey!§r§7 You cannot hurt monsters of this area."
         );
 
         $this->defaultLanguagePack = array(
@@ -75,6 +79,7 @@ class ResourceUpdater
             "gui_flag_invincible" => "Invincible",
             "gui_flag_fall_dmg" => "Fall damage",
             "gui_flag_usage" => "Use",
+            "gui_flag_interactframe" => "Interact with frames",
             "gui_flag_item_drop" => "Item drop",
             "gui_flag_item_death_drop" => "Item drop by death",
             "gui_flag_explosions" => "Explosions",
@@ -91,6 +96,7 @@ class ResourceUpdater
             "gui_flag_send_chat" => "Allow sending chat messages",
             "gui_flag_rcv_chat" => "Allow receiving chat messages",
             "gui_flag_enderpearl" => "Allow use of ender pearls",
+            "gui_flag_bow" => "Allow use of bow",
             "gui_flag_fly_mode" => "Fly mode",
             "gui_enabled" => "Enabled",
             "gui_disabled" => "Disabled",
@@ -103,8 +109,9 @@ class ResourceUpdater
             "gui_flag_spread" => "Allow spreading",
             "gui_flag_block_burn" => "Allow block burn",
             "gui_flag_priority" => "Region priority",
-            "gui_help_menu_label1" => "If you need help setting up WorldGuard, you can contact us on Discord for help:",
-            "gui_help_menu_label2" => "https://discord.com/invite/uZevqGX",
+            "gui_help_menu_label1" => "If you need help setting up WorldGuard by fernanACM, you can
+            contact us on Discord for help:",
+            "gui_help_menu_label2" => "https://discord.gg/YyE9XFckqb",
             //effects
             "gui_flag_effect" => "Effects",
             "gui_effect_delete" => "Delete all Effects",

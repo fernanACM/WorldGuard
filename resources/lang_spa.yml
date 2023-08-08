@@ -1,0 +1,93 @@
+---
+author_name: Chalapa
+gui_wg_menu_title: World Guard Menu
+gui_label_choose_option: Elija una opción
+gui_btn_rg_management: Gestión de regiones
+gui_btn_help: Ayuda
+gui_btn_manage_existing: Gestión de regiones existentes
+gui_btn_create_region: Crear una nueva región
+gui_btn_redefine_region: Redefinir región
+gui_btn_delete_region: Borrar una región
+gui_creation_menu_title: Creación de región
+gui_creation_menu_label1: Vamos a ayudarle a crear una región.
+gui_creation_menu_rg_name_box: Primero tendrá que ingresar un nombre para su región.
+gui_creation_menu_label2: Si quieres que tu región se expanda infinitamente hacia arriba y hacia abajo marque la siguiente opción.
+gui_creation_menu_toggle_expand: Expandir verticalmente
+gui_creation_menu_label3: "Ahora presione \xA7a'Submit'\xA7r y seleccione 2 esquinas de
+  tu región como se te indicará a continuación".
+gui_dropdown_select_redefine: seleccione la región que le gustaría redefinir
+gui_dropdown_select_delete: seleccione la región que desea eliminar
+gui_dropdown_select_manage: seleccione la región que le gustaría administrar
+gui_manage_menu_title: 'Administrando región:'
+gui_flag_pluginbypass: 'Omisión de complemento para USE y FLOW y también BLOCKBREAK y BLOCKPLACE (MyPlot)'
+gui_flag_deny_message: habilitar mensajes para jugadores
+gui_flag_blockbreak: Permitir ruptura de bloque
+gui_flag_blockplace: Permitir lugar de bloqueo
+gui_flag_pvp: PvP
+gui_flag_xp_drops: gotas de experiencia
+gui_flag_invincible: Invencible
+gui_flag_fall_dmg: Daño por caída
+gui_flag_usage: Usar
+gui_flag_interactframe: "Interactuar con marcos"
+gui_flag_item_drop: Caída de artículo
+gui_flag_item_death_drop: Objeto caído por muerte
+gui_flag_explosions: Explosiones
+gui_flag_notify_enter: Notificar entrar
+gui_flag_notify_leave: Notificar baja
+gui_flag_potions: Permitir pociones
+gui_flag_allowed_enter: Permitido entrar
+gui_flag_allowed_leave: Licencia permitida
+gui_flag_gm: modo de juego
+gui_gm_survival: Supervivencia
+gui_gm_creative: Creativo
+gui_gm_adventure: Aventura
+gui_flag_sleep: Permitir dormir
+gui_flag_send_chat: Permitir enviar mensajes de chat
+gui_flag_rcv_chat: Permitir recibir mensajes de chat
+gui_flag_enderpearl: Permitir el uso de perlas ender
+gui_flag_bow: Permitir el uso del arco
+gui_flag_fly_mode: modo de vuelo
+gui_enabled: Habilitado
+gui_disabled: Deshabilitado
+gui_flag_eat: Permitir comer
+gui_flag_hunger: Activar hambre
+gui_flag_dmg_animals: Permitir dañar a los animales
+gui_flag_dmg_monsters: Permitir dañar monstruos
+gui_flag_leaf_decay: Permitir la descomposición de las hojas
+gui_flag_plant_growth: Permitir el crecimiento de plantas
+gui_flag_spread: Permitir propagación
+gui_flag_block_burn: Permitir quemar bloque
+gui_flag_priority: prioridad de la región
+gui_help_menu_label1: 'Si necesita ayuda para configurar WorldGuard por fernanACM, puede
+contáctanos en Discord para obtener ayuda:'
+gui_help_menu_label2: 'https://discord.gg/YyE9XFckqb'
+gui_flag_effect: Efectos
+gui_effect_delete: Eliminar todos los efectos
+gui_effect_speed: Velocidad
+gui_effect_slowness: Lentitud
+gui_effect_haste: Prisa
+gui_effect_fatigue: Fatiga Minera
+gui_effect_strength: Fuerza
+gui_effect_healing: Salud instantánea
+gui_effect_damage: daño instantáneo
+gui_effect_jump_boost: Impulso de salto
+gui_effect_nausea: Náuseas
+gui_effect_regeneration: Regeneración
+gui_effect_resistance: Resistencia
+gui_effect_fire_resistance: Resistencia al fuego
+gui_effect_water_breathing: Respiración de agua
+gui_effect_invisibilty: Invisibilidad
+gui_effect_blindness: Ceguera
+gui_effect_night_vision: Visión nocturna
+gui_effect_hunger: Hambre
+gui_effect_weakness: Debilidad
+gui_effect_poison: Veneno
+gui_effect_wither: Marchitar
+gui_effect_healthboost: Aumento de la salud
+gui_effect_absort: Absorción
+gui_effect_saturation: Saturación
+gui_effect_leviatation: Levitación
+gui_effect_fatal_poison: Veneno mortal
+gui_effect_conduit_power: Conducto de energía
+gui_effect_restart_label: '¡Después de agregar/eliminar el efecto, necesita reiniciar su servidor!'
+...
