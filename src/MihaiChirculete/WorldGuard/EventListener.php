@@ -68,6 +68,8 @@ class EventListener implements Listener{
     public static array $OTHER;
     /** @var array $USABLES */
     public static array $USABLES;
+    /** @var array $ITEM_FRAME */
+    public static array $ITEM_FRAME;
 
     public function __construct(WorldGuard $plugin){
         $this->plugin = $plugin;
@@ -85,7 +87,7 @@ class EventListener implements Listener{
 
         self::$USABLES = [
             VanillaBlocks::BARREL()->getTypeId(), VanillaBlocks::CHEST()->getTypeId(), VanillaBlocks::ENDER_CHEST()->getTypeId(), 
-            VanillaBlocks::TRAPPED_CHEST()->getTypeId(), VanillaBlocks::ENCHANTING_TABLE()->getTypeId(), 
+            VanillaBlocks::TRAPPED_CHEST()->getTypeId(), VanillaBlocks::ENCHANTING_TABLE()->getTypeId(),
             
             VanillaBlocks::FURNACE()->getTypeId(), VanillaBlocks::BLAST_FURNACE()->getTypeId(), VanillaBlocks::SMOKER()->getTypeId(),
 
@@ -120,6 +122,10 @@ class EventListener implements Listener{
             VanillaBlocks::CHERRY_BUTTON()->getTypeId(), VanillaBlocks::JUNGLE_BUTTON()->getTypeId(), VanillaBlocks::SPRUCE_BUTTON()->getTypeId(),
             VanillaBlocks::WARPED_BUTTON()->getTypeId(), VanillaBlocks::CRIMSON_BUTTON()->getTypeId(), VanillaBlocks::DARK_OAK_BUTTON()->getTypeId(),
             VanillaBlocks::MANGROVE_BUTTON()->getTypeId(), VanillaBlocks::POLISHED_BLACKSTONE_BUTTON()->getTypeId(),
+        ];
+
+        self::$ITEM_FRAME = [
+            VanillaBlocks::ITEM_FRAME()->getTypeId(), VanillaBlocks::GLOWING_ITEM_FRAME()->getTypeId()
         ];
     }
 
@@ -198,11 +204,15 @@ class EventListener implements Listener{
             if($reg->getFlag("pluginbypass") === "false"){
                 $block = $event->getBlock()->getTypeId();
                 if($reg->getFlag("interactframe") === "false"){
-                        if($player->hasPermission("worldguard.interactframe." . $reg->getName()) && ($block === BlockTypeIds::ITEM_FRAME || $block === BlockTypeIds::GLOWING_ITEM_FRAME)){
+                        if($player->hasPermission("worldguard.interactframe") && ($block === BlockTypeIds::ITEM_FRAME || $block === BlockTypeIds::GLOWING_ITEM_FRAME))
+                            return;
+                        if(in_array($block, self::$ITEM_FRAME)){
                             $event->cancel();
+                            return;
                         }
                 }else{
                     $event->uncancel();
+                    return;
                 }
                 if($reg->getFlag("use") === "false"){
                     if($player->hasPermission("worldguard.usebarrel." . $reg->getName()) && $block === BlockTypeIds::BARREL)
