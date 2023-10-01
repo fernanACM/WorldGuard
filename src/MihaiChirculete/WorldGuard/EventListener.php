@@ -22,6 +22,7 @@
 
 namespace MihaiChirculete\WorldGuard;
 
+use pocketmine\block\Block;
 use pocketmine\event\block\{BlockPlaceEvent,
     BlockBreakEvent,
     LeavesDecayEvent,
@@ -31,6 +32,7 @@ use pocketmine\event\block\{BlockPlaceEvent,
     BlockBurnEvent
 };
 use pocketmine\event\entity\{EntityDamageEvent, EntityDamageByEntityEvent, EntityExplodeEvent, ProjectileLaunchEvent};
+use pocketmine\block\BlockTypeIds as BlockLegacyIds;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\projectile\Arrow;
@@ -59,14 +61,12 @@ use function json_encode;
 
 class EventListener implements Listener{
 
-    /** @var WorldGuard $plugin */
     private WorldGuard $plugin;
 
-    /** @var array $POTIONS */
     public static array $POTIONS;
-    /** @var array $OTHER */
+
     public static array $OTHER;
-    /** @var array $USABLES */
+
     public static array $USABLES;
 
     public function __construct(WorldGuard $plugin){
@@ -84,13 +84,10 @@ class EventListener implements Listener{
             VanillaItems::NETHERITE_HOE()->getTypeId(), VanillaItems::STONE_HOE()->getTypeId()];
 
         self::$USABLES = [
-            VanillaBlocks::ITEM_FRAME()->getTypeId(), VanillaBlocks::GLOWING_ITEM_FRAME()->getTypeId(), VanillaBlocks::BARREL()->getTypeId(),
-            VanillaBlocks::CHEST()->getTypeId(), VanillaBlocks::ENDER_CHEST()->getTypeId(), VanillaBlocks::TRAPPED_CHEST()->getTypeId(),
+            VanillaBlocks::BARREL()->getTypeId(), VanillaBlocks::CHEST()->getTypeId(), VanillaBlocks::ENDER_CHEST()->getTypeId(), VanillaBlocks::TRAPPED_CHEST()->getTypeId(),
             VanillaBlocks::ENCHANTING_TABLE()->getTypeId(), 
             
-            VanillaBlocks::FURNACE()->getTypeId(), VanillaBlocks::BLAST_FURNACE()->getTypeId(), VanillaBlocks::SMOKER()->getTypeId(),
-
-            VanillaBlocks::SHULKER_BOX()->getTypeId(), VanillaBlocks::DYED_SHULKER_BOX()->getTypeId(),
+            VanillaBlocks::FURNACE()->getTypeId(), VanillaBlocks::BLAST_FURNACE()->getTypeId(), VanillaBlocks::SMOKER()->getTypeId(), 
             
             VanillaBlocks::OAK_DOOR()->getTypeId(), VanillaBlocks::DARK_OAK_DOOR()->getTypeId(), VanillaBlocks::BIRCH_DOOR()->getTypeId(),
             VanillaBlocks::ACACIA_DOOR()->getTypeId(), VanillaBlocks::CHERRY_DOOR()->getTypeId(), VanillaBlocks::JUNGLE_DOOR()->getTypeId(), VanillaBlocks::SPRUCE_DOOR()->getTypeId(),
@@ -127,67 +124,66 @@ class EventListener implements Listener{
     /**
      * @priority MONITOR
      */
-    public function onJoin(PlayerJoinEvent $event): void{
+    public function onJoin(PlayerJoinEvent $event)
+    {
         $this->plugin->sessionizePlayer($event->getPlayer());
     }
 
-    public function onLeave(PlayerQuitEvent $event): void{
+    public function onLeave(PlayerQuitEvent $event)
+    {
         $this->plugin->onPlayerLogoutRegion($event->getPlayer());
     }
 
-    /**
-     * @param PlayerInteractEvent $event
-     * @return void
-     */
-    public function onInteract(PlayerInteractEvent $event): void{
-        if($event->getItem() instanceof Bucket || $event->getItem() instanceof LiquidBucket){
+    public function onInteract(PlayerInteractEvent $event){
+        if ($event->getItem() instanceof Bucket || $event->getItem() instanceof LiquidBucket){
             $player = $event->getPlayer();
-            if(($reg = $this->plugin->getRegionFromPosition($event->getBlock()->getPosition())) !== ""){
-                if($reg->getFlag("block-place") === "false"){
-                    if($player->hasPermission("worldguard.place." . $reg->getName()) || $player->hasPermission("worldguard.block-place." . $reg->getName())){
-                        return;
+            if (($reg = $this->plugin->getRegionFromPosition($event->getBlock()->getPosition())) !== "") {
+                if ($reg->getFlag("block-place") === "false") {
+                    if($event->getPlayer()->hasPermission("worldguard.place." . $reg->getName()) || $event->getPlayer()->hasPermission("worldguard.block-place." . $reg->getName())){
+                        return true;
                     }
-                    if($player->hasPermission(DefaultPermissions::ROOT_OPERATOR)){
-                        return;
-                    }else{
+                    if ($player->hasPermission(DefaultPermissions::ROOT_OPERATOR)){
+                        return true;
+                    }
+                    else{
                         $event->cancel();
-                        if($reg->getFlag("deny-msg") === "true"){
+                        if ($reg->getFlag("deny-msg") === "true") {
                             $player->sendMessage(TF::RED. $this->plugin->resourceManager->getMessages()["denied-block-place"]);
                         }
-                        return;
+                        return false;
                     }
                 }
             }
         }
-        if(isset($this->plugin->creating[$id = ($player = $event->getPlayer())->getUniqueId()->getBytes()])){
-            if($event->getAction() === $event::RIGHT_CLICK_BLOCK){
+        if (isset($this->plugin->creating[$id = ($player = $event->getPlayer())->getUniqueId()->getBytes()])) {
+            if ($event->getAction() === $event::RIGHT_CLICK_BLOCK){
                 $block = $event->getBlock();
                 $x = $block->getPosition()->getX();
                 $y = $block->getPosition()->getY();
                 $z = $block->getPosition()->getZ();
                 $world = $block->getPosition()->getWorld()->getDisplayName();
-                if($x < 0){
+                if ($x < 0){
                     $x = ($x + 1);
                 }
-                if($z < 0){
+                if ($z < 0){
                     $z = ($z + 1);
                 }
                 $player->sendMessage(TF::YELLOW.'Selected position: X'.$x.', Y: '.$y.', Z: '.$z.', Level: '.$world);
-                if(!isset($this->plugin->extended[$id = ($player = $event->getPlayer())->getUniqueId()->getBytes()])){
+                if (!isset($this->plugin->extended[$id = ($player = $event->getPlayer())->getUniqueId()->getBytes()])){
                     $this->plugin->creating[$id][] = [$x, $y, $z, $world];
                 }
                 else{
-                    if(count($this->plugin->creating[$id]) == 0){
+                    if (count($this->plugin->creating[$id]) == 0) {
                         $this->plugin->creating[$id][] = [$x, 0, $z, $world];
                     }
-                    elseif(count($this->plugin->creating[$id]) >= 1){
+                    elseif (count($this->plugin->creating[$id]) >= 1) {
                         $this->plugin->creating[$id][] = [$x, 255, $z, $world];
                     }
                 }
-                if(count($this->plugin->creating[$id]) >= 2){
-                    if(($reg = $this->plugin->processCreation($player)) !== false){
+                if (count($this->plugin->creating[$id]) >= 2) {
+                    if (($reg = $this->plugin->processCreation($player)) !== false) {
                         $player->sendMessage(TF::GREEN.'Successfully created region '.$reg);
-                    }else{
+                    } else {
                         $player->sendMessage(TF::RED.'An error occurred while creating the region.');
                     }
                 }
@@ -198,14 +194,14 @@ class EventListener implements Listener{
         if(($reg = $this->plugin->getRegionByPlayer($player)) !== ""){
             if($reg->getFlag("pluginbypass") === "false"){
                 $block = $event->getBlock()->getTypeId();
-                if($reg->getFlag("interactframe") === "false"){
-                        if($player->hasPermission("worldguard.interactframe." . $reg->getName()) && ($block === BlockTypeIds::ITEM_FRAME || $block === BlockTypeIds::GLOWING_ITEM_FRAME)){
+                if ($reg->getFlag("interactframe") === "false") {
+                        if($player->hasPermission("worldguard.interactframe." . $reg->getName()) && ($block === BlockTypeIds::ITEM_FRAME || $block === BlockTypeIds::GLOWING_ITEM_FRAME)) {
                             $event->cancel();
                         }
                 }else{
                     $event->uncancel();
                 }
-                if($reg->getFlag("use") === "false"){
+                if ($reg->getFlag("use") === "false"){
                     if($player->hasPermission("worldguard.usebarrel." . $reg->getName()) && $block === BlockTypeIds::BARREL)
                         return;
                     if($player->hasPermission("worldguard.usechest." . $reg->getName()) && $block === BlockTypeIds::CHEST)
@@ -216,9 +212,7 @@ class EventListener implements Listener{
                         return;
                     if($player->hasPermission("worldguard.enchantingtable." . $reg->getName()) && $block === BlockTypeIds::ENCHANTING_TABLE)
                         return;
-                    if($player->hasPermission("worldguard.useshulkers." . $reg->getName()) && ($block === BlockTypeIds::SHULKER_BOX || $block === BlockTypeIds::DYED_SHULKER_BOX))
-                        return;
-                    if($player->hasPermission("worldguard.usefurnaces." . $reg->getName()) && ($block === BlockTypeIds::FURNACE || $block === BlockTypeIds::BLAST_FURNACE || $block === BlockTypeIds::SMOKER))
+                    if($player->hasPermission("worldguard.usefurnaces." . $reg->getName()) && $block === BlockTypeIds::FURNACE || $block === BlockTypeIds::BLAST_FURNACE || $block === BlockTypeIds::SMOKER)
                         return;
                     if($player->hasPermission("worldguard.usedoors." . $reg->getName()) && ($block === BlockTypeIds::ACACIA_DOOR || $block === BlockTypeIds::BIRCH_DOOR || $block === BlockTypeIds::DARK_OAK_DOOR || $block === BlockTypeIds::IRON_DOOR || $block === BlockTypeIds::JUNGLE_DOOR || $block === BlockTypeIds::OAK_DOOR || $block === BlockTypeIds::SPRUCE_DOOR || $block === BlockTypeIds::CHERRY_DOOR || ($block === BlockTypeIds::IRON_DOOR || in_array($block, [BlockTypeIds::ACACIA_DOOR, BlockTypeIds::BIRCH_DOOR, BlockTypeIds::CRIMSON_DOOR, BlockTypeIds::JUNGLE_DOOR, BlockTypeIds::DARK_OAK_DOOR, BlockTypeIds::MANGROVE_DOOR, BlockTypeIds::SPRUCE_DOOR, BlockTypeIds::CHERRY_DOOR, BlockTypeIds::CRIMSON_DOOR, BlockTypeIds::WARPED_DOOR, BlockTypeIds::OAK_DOOR]))))
                         return;
@@ -247,78 +241,41 @@ class EventListener implements Listener{
                     }
                     if(in_array($block, self::$USABLES)){
                         if($reg->getFlag("deny-msg") === "true"){
-                            //$player->sendMessage(TF::RED.'You cannot interact with '.$event->getBlock()->getName().'s. in this area.');
-                            $player->sendMessage(TF::RED. (string)str_replace(["{BLOCK_NAME}"], [$event->getBlock()->getName()], $this->plugin->resourceManager->getMessages()["denied-block-interact"]));
+                            $player->sendMessage(TF::RED.'You cannot interact with '.$event->getBlock()->getName().'s.');
                         }
                         $event->cancel();
                         return;
                     }
-                }else $event->uncancel();
+                } else $event->uncancel();
 
-                if($reg->getFlag("potions") === "false"){
-                    if(in_array($event->getItem()->getTypeId(), self::$POTIONS)){
-                        //$player->sendMessage(TF::RED.'You cannot use '.$event->getItem()->getName().' in this area.');
-                        $player->sendMessage(TF::RED. (string)str_replace(["{ITEM_NAME}"], [$event->getItem()->getName()], $this->plugin->resourceManager->getMessages()["denied-item-interact"]));
+                if($reg->getFlag("potions") === "false") {
+                    if(in_array($event->getItem()->getTypeId(), self::$POTIONS)) {
+                        $player->sendMessage(TF::RED.'You cannot use '.$event->getItem()->getName().' in this area.');
                         $event->cancel();
                         return;
                     }
                 }else $event->uncancel();
                 if(!$player->hasPermission("worldguard.edit." . $reg->getName())){
-                    if(in_array($event->getItem()->getTypeId(), self::$OTHER)){
-                        //$player->sendMessage(TF::RED.'You cannot use '.$event->getItem()->getName().'. in this area.');
-                        $player->sendMessage(TF::RED. (string)str_replace(["{ITEM_NAME}"], [$event->getItem()->getName()], $this->plugin->resourceManager->getMessages()["denied-item-use"]));
+                    if (in_array($event->getItem()->getTypeId(), self::$OTHER)) {
+                        $player->sendMessage(TF::RED.'You cannot use '.$event->getItem()->getName().'.');
                         $event->cancel();
                         return;
                     }
-                }else $event->uncancel();
+                } else $event->uncancel();
                 return;
             }
         }
     }
 
-    /**
-     * @param ProjectileLaunchEvent $event
-     * @return void
-     */
-    public function blockEnderpeals(ProjectileLaunchEvent $event): void{
-        $tile = $event->getEntity();
-        $player = $tile->getOwningEntity();
-        if($player instanceof Player){
-            if($tile instanceof EnderPearl){
-                if(($region = $this->plugin->getRegionByPlayer($player)) !== ""){
-                    if($region->getFlag("enderpearl") === "false"){
-                        $event->cancel();
-                        if($region->getFlag("deny-msg") === "true"){
-                            $player->sendMessage(TF::RED . $this->plugin->resourceManager->getMessages()["denied-ender-pearls"]);
-                        }
-                    }
-                }
-            }elseif($tile instanceof Arrow){
-                if(($region = $this->plugin->getRegionByPlayer($player)) !== ""){
-                    if($region->getFlag("bow") === "false"){
-                    	$event->cancel();
-                        if($region->getFlag("deny-msg") === "true"){
-                        	$player->sendMessage(TF::RED . $this->plugin->resourceManager->getMessages()["denied-bow"]);
-			            }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * @param BlockUpdateEvent $event
-     * @return void
-     */
-    public function onBlockUpdate(BlockUpdateEvent $event): void{
+    public function onBlockUpdate(BlockUpdateEvent $event){
         $block = $event->getBlock();
         $getblpos = $block->getPosition();
         $position = new Position($getblpos->getX(),$getblpos->getY(),$getblpos->getZ(),$block->getPosition()->getWorld());
         $region = $this->plugin->getRegionFromPosition($position);
-        if($region !== ""){
-            if($region->getFlag("pluginbypass") === "false"){
-                if($block->getName() === "Lava" || $block->getName() === "Water"){
-                    if($region->getFlag("flow") === "false"){
+        if ($region !== ""){
+            if ($region->getFlag("pluginbypass") === "false") {
+                if ($block->getName() === "Lava" || $block->getName() === "Water"){
+                    if ($region->getFlag("flow") === "false"){
                         $event->cancel();
                     }
                 }
@@ -326,34 +283,32 @@ class EventListener implements Listener{
         }
     }
 
-    /**
-     * @param BlockPlaceEvent $event
-     * @return void
-     */
-    public function onPlace(BlockPlaceEvent $event): void{
+    public function onPlace(BlockPlaceEvent $event) {
         $player = $event->getPlayer();
         $transaction = $event->getTransaction();
-        foreach ($transaction->getBlocks() as [$x, $y, $z, $block]){
+
+        foreach ($transaction->getBlocks() as [$x, $y, $z, $block]) {
+
             $x = $block->getPosition()->getX();
             $z = $block->getPosition()->getZ();
-            if($x < 0){
+            if ($x < 0) {
                 $x = ($x + 1);
             }
-            if($z < 0){
+            if ($z < 0) {
                 $z = ($z + 1);
             }
             $position = new Position($x, $block->getPosition()->getY(), $z, $block->getPosition()->getWorld());
-            if(($region = $this->plugin->getRegionFromPosition($position)) !== ""){
-                if($region->getFlag("pluginbypass") === "false"){
-                    if($region->getFlag("block-place") === "false"){
-                        if($event->getPlayer()->hasPermission("worldguard.place." . $region->getName()) || $event->getPlayer()->hasPermission("worldguard.block-place." . $region->getName())){
-                            return;
-                        }else if($event->getPlayer()->hasPermission("worldguard.build-bypass")){
-                            return;
-                        }else if($player->hasPermission(DefaultPermissions::ROOT_OPERATOR)){
-                            return;
-                        }else{
-                            if($region->getFlag("deny-msg") === "true"){
+            if (($region = $this->plugin->getRegionFromPosition($position)) !== "") {
+                if ($region->getFlag("pluginbypass") === "false") {
+                    if ($region->getFlag("block-place") === "false") {
+                        if ($event->getPlayer()->hasPermission("worldguard.place." . $region->getName()) || $event->getPlayer()->hasPermission("worldguard.block-place." . $region->getName())) {
+                            return true;
+                        } else if ($event->getPlayer()->hasPermission("worldguard.build-bypass")) {
+                            return true;
+                        } else if ($player->hasPermission(DefaultPermissions::ROOT_OPERATOR)) {
+                            return true;
+                        } else {
+                            if ($region->getFlag("deny-msg") === "true") {
                                 $player->sendMessage(TF::RED . $this->plugin->resourceManager->getMessages()["denied-block-place"]);
                             }
                             $event->cancel();
@@ -366,50 +321,46 @@ class EventListener implements Listener{
 
     /**
      * @param BlockBreakEvent $event
-     * @return void
      */
-    public function onBreak(BlockBreakEvent $event): void{
+    public function onBreak(BlockBreakEvent $event){
         $player = $event->getPlayer();
         $block = $event->getBlock();
         $x = $block->getPosition()->x;
         $z = $block->getPosition()->z;
-        if($x < 0){
+        if ($x < 0) {
             $x = ($x + 1);
         }
-        if($z < 0){
+        if ($z < 0) {
             $z = ($z + 1);
         }
         $position = new Position($x, $block->getPosition()->y, $z, $block->getPosition()->getWorld());
-        if(($region = $this->plugin->getRegionFromPosition($position)) !== ""){
-            if($region->getFlag("pluginbypass") === "false"){
-                if($region->getFlag("block-break") === "false"){
-                    if($event->getPlayer()->hasPermission("worldguard.break." . $region->getName()) || $event->getPlayer()->hasPermission("worldguard.block-break." . $region->getName()) || $event->getPlayer()->hasPermission("worldguard.break") || $event->getPlayer()->hasPermission("worldguard.block-break")){
-                        return;
-                    }else if($event->getPlayer()->hasPermission("worldguard.break-bypass")){
-                        return;
-                    }else{
-                        if($region->getFlag("deny-msg") === "true"){
+        if (($region = $this->plugin->getRegionFromPosition($position)) !== "") {
+            if ($region->getFlag("pluginbypass") === "false") {
+                if ($region->getFlag("block-break") === "false") {
+                    if ($event->getPlayer()->hasPermission("worldguard.break." . $region->getName()) || $event->getPlayer()->hasPermission("worldguard.block-break." . $region->getName()) || $event->getPlayer()->hasPermission("worldguard.break") || $event->getPlayer()->hasPermission("worldguard.block-break")) {
+                        return true;
+                    } else if ($event->getPlayer()->hasPermission("worldguard.break-bypass")) {
+                        return true;
+                    } else {
+                        if ($region->getFlag("deny-msg") === "true") {
                             $player->sendMessage(TF::RED . $this->plugin->resourceManager->getMessages()["denied-block-break"]);
                         }
                         $event->cancel();
                     }
                 }
             }
-            if($region->getFlag("exp-drops") === "false"){
+            if ($region->getFlag("exp-drops") === "false") {
                 $event->setXpDropAmount(0);
             }
 
         }
     }
 
-    /**
-     * @param PlayerDeathEvent $event
-     * @return void
-     */
-    public function onDeathItemDrop(PlayerDeathEvent $event): void{
-        if(($reg = $this->plugin->getRegionByPlayer($player = $event->getPlayer())) !== ""){
-            if($reg->getFlag("item-by-death") === "false" && !$player->hasPermission("worldguard.deathdrop." . $reg->getName()) and !$player->hasPermission("worldguard.deathdrop")){
-                if($reg->getFlag("deny-msg") === "true"){
+    public function onDeathItemDrop(PlayerDeathEvent $event)
+    {
+        if (($reg = $this->plugin->getRegionByPlayer($player = $event->getPlayer())) !== "") {
+            if ($reg->getFlag("item-by-death") === "false" && !$player->hasPermission("worldguard.deathdrop." . $reg->getName()) and !$player->hasPermission("worldguard.deathdrop")) {
+                if ($reg->getFlag("deny-msg") === "true") {
                     $player->sendMessage(TF::RED . $this->plugin->resourceManager->getMessages()["denied-item-death-drop"]);
                 }
                 $event->setDrops([]);
@@ -418,57 +369,50 @@ class EventListener implements Listener{
         }
     }
 
-    /**
-     * @param BlockBurnEvent $event
-     * @return void
-     */
-    public function onBurn(BlockBurnEvent $event): void{
-        if(($region = $this->plugin->getRegionFromPosition($event->getBlock()->getPosition())) !== ""){
-            if($region->getFlag("allow-block-burn") === "false")
+    public function onBurn(BlockBurnEvent $event)
+    {
+        if (($region = $this->plugin->getRegionFromPosition($event->getBlock()->getPosition())) !== "") {
+            if ($region->getFlag("allow-block-burn") === "false")
                 $event->cancel();
         }
     }
 
     /**
-     * @param PlayerMoveEvent $event
-     * @return void
+     * @priority MONITOR
      */
-    public function onMove(PlayerMoveEvent $event): void{
+    public function onMove(PlayerMoveEvent $event){
         if(!$event->getFrom()->equals($event->getTo())){
-            if($this->plugin->updateRegion($player = $event->getPlayer()) !== true){
-		        $player->setMotion($event->getFrom()->subtract($player->getPosition()->getX(), $player->getPosition()->getY(), $player->getPosition()->getZ())->normalize()->multiply($this->plugin->getKnockback()));
+            if ($this->plugin->updateRegion($player = $event->getPlayer()) !== true){
+		$player->setMotion($event->getFrom()->subtract($player->getPosition()->getX(), $player->getPosition()->getY(), $player->getPosition()->getZ())->normalize()->multiply($this->plugin->getKnockback()));
             }
         }
     }
 
-    /**
-     * @param EntityDamageByEntityEvent $event
-     * @return void
-     */
-    public function onHurtByEntity(EntityDamageByEntityEvent $event): void{
+    public function onHurtByEntity(EntityDamageByEntityEvent $event)
+    {
         $victim = $event->getEntity();
         $damager = $event->getDamager();
-        if(($victim) instanceof Player){
-            if(($reg = $this->plugin->getRegionByPlayer($victim)) !== ""){
-                if($reg->getFlag("pvp") === "false"){
-                    if(($damager) instanceof Player){
-                        if($reg->getFlag("deny-msg") === "true"){
+        if (($victim) instanceof Player) {
+            if (($reg = $this->plugin->getRegionByPlayer($victim)) !== "") {
+                if ($reg->getFlag("pvp") === "false") {
+                    if (($damager) instanceof Player) {
+                        if ($reg->getFlag("deny-msg") === "true") {
                             $damager->sendMessage(TF::RED . $this->plugin->resourceManager->getMessages()["denied-pvp"]);
                         }
                         $event->cancel();
-                        return;
+                        return true;
                     }
                 }
             }
-            if(($damager) instanceof Player){
-                if(($reg = $this->plugin->getRegionByPlayer($damager)) !== ""){
-                    if($reg->getFlag("pvp") === "false"){
-                        if(($victim) instanceof Player){
-                            if($reg->getFlag("deny-msg") === "true"){
+            if (($damager) instanceof Player) {
+                if (($reg = $this->plugin->getRegionByPlayer($damager)) !== "") {
+                    if ($reg->getFlag("pvp") === "false") {
+                        if (($victim) instanceof Player) {
+                            if ($reg->getFlag("deny-msg") === "true") {
                                 $damager->sendMessage(TF::RED . $this->plugin->resourceManager->getMessages()["denied-pvp"]);
                             }
                             $event->cancel();
-                            return;
+                            return true;
                         }
                     }
                 }
@@ -477,11 +421,11 @@ class EventListener implements Listener{
 
         // $this->plugin->getLogger()->notice(get_class($event->getEntity()));
 
-        if(Utils::isAnimal($event->getEntity())){
-            if(($player = $event->getDamager()) instanceof Player)
-                if(($region = $this->plugin->getRegionFromPosition($event->getEntity()->getPosition())) !== ""){
-                    if($region->getFlag("allow-damage-animals") === "false"){
-                        if($region->getFlag("deny-msg") === "true"){
+        if (Utils::isAnimal($event->getEntity())) {
+            if (($player = $event->getDamager()) instanceof Player)
+                if (($region = $this->plugin->getRegionFromPosition($event->getEntity()->getPosition())) !== "") {
+                    if ($region->getFlag("allow-damage-animals") === "false") {
+                        if ($region->getFlag("deny-msg") === "true") {
                             $player->sendMessage(TF::RED . $this->plugin->resourceManager->getMessages()["denied-hurt-animal"]);
                         }
                         $event->cancel();
@@ -490,10 +434,10 @@ class EventListener implements Listener{
                 }
         }
 
-        if(Utils::isMonster($event->getEntity())){
-            if(($player = $event->getDamager()) instanceof Player)
-                if(($region = $this->plugin->getRegionFromPosition($event->getEntity()->getPosition())) !== ""){
-                    if($region->getFlag("allow-damage-animals") === "false"){
+        if (Utils::isMonster($event->getEntity())) {
+            if (($player = $event->getDamager()) instanceof Player)
+                if (($region = $this->plugin->getRegionFromPosition($event->getEntity()->getPosition())) !== "") {
+                    if ($region->getFlag("allow-damage-animals") === "false") {
                         $player->sendMessage(TF::RED . $this->plugin->resourceManager->getMessages()["denied-hurt-monster"]);
                         $event->cancel();
                         return;
@@ -501,10 +445,10 @@ class EventListener implements Listener{
                 }
         }
 
-        if(strpos(get_class($event->getEntity()), "monster") !== false){
-            if(($player = $event->getDamager()) instanceof Player)
-                if(($region = $this->plugin->getRegionFromPosition($event->getEntity()->getPosition())) !== ""){
-                    if($region->getFlag("allow-damage-monsters") === "false"){
+        if (strpos(get_class($event->getEntity()), "monster") !== false) {
+            if (($player = $event->getDamager()) instanceof Player)
+                if (($region = $this->plugin->getRegionFromPosition($event->getEntity()->getPosition())) !== "") {
+                    if ($region->getFlag("allow-damage-monsters") === "false") {
                         $player->sendMessage(TF::RED . 'You cannot hurt monsters of this region.');
                         $event->cancel();
                         return;
@@ -513,14 +457,11 @@ class EventListener implements Listener{
         }
     }
 
-    /**
-     * @param EntityDamageEvent $event
-     * @return void
-     */
-    public function onHurt(EntityDamageEvent $event): void{
-        if(($this->plugin->getRegionFromPosition($event->getEntity()->getPosition())) !== ""){
-            if($this->plugin->getRegionFromPosition($event->getEntity()->getPosition())->getFlag("invincible") === "true"){
-                if($event->getEntity() instanceof Player){
+    public function onHurt(EntityDamageEvent $event)
+    {
+        if (($this->plugin->getRegionFromPosition($event->getEntity()->getPosition())) !== "") {
+            if ($this->plugin->getRegionFromPosition($event->getEntity()->getPosition())->getFlag("invincible") === "true") {
+                if ($event->getEntity() instanceof Player) {
                     $event->cancel();
                 }
             }
@@ -528,15 +469,12 @@ class EventListener implements Listener{
         return;
     }
 
-    /**
-     * @param EntityDamageEvent $event
-     * @return void
-     */
-    public function onFallDamage(EntityDamageEvent $event): void{
-        if(($this->plugin->getRegionFromPosition($event->getEntity()->getPosition())) !== ""){
+    public function onFallDamage(EntityDamageEvent $event)
+    {
+        if (($this->plugin->getRegionFromPosition($event->getEntity()->getPosition())) !== "") {
             $cause = $event->getCause();
-            if($this->plugin->getRegionFromPosition($event->getEntity()->getPosition())->getFlag("fall-dmg") === "false"){
-                if($cause == EntityDamageEvent::CAUSE_FALL){
+            if ($this->plugin->getRegionFromPosition($event->getEntity()->getPosition())->getFlag("fall-dmg") === "false") {
+                if ($cause == EntityDamageEvent::CAUSE_FALL) {
                     $event->cancel();
                 }
             }
@@ -546,7 +484,7 @@ class EventListener implements Listener{
 
     /**
      * @param CommandEvent $event
-     * @return void
+     * @ignoreCancelled true
      */
     public function onCommand(CommandEvent $event){
         $player = $event->getSender();
@@ -554,17 +492,17 @@ class EventListener implements Listener{
             return;
         }
         
-        if($this->plugin->getRegionByPlayer($player) !== "")
-            if(str_starts_with(strtolower($event->getCommand()), '/f claim')){
+        if ($this->plugin->getRegionByPlayer($player) !== "")
+            if (str_starts_with(strtolower($event->getCommand()), '/f claim')) {
                 $player->sendMessage(TF::RED . 'You cannot claim plots in this area.');
                 $event->cancel();
             }
 
 
         $cmd = explode(" ", $event->getCommand())[0];
-        if(substr($cmd, 0, 1) === '/'){
-            if(($region = $this->plugin->getRegionByPlayer($player = $player)) !== "" && !$region->isCommandAllowed($cmd)){
-                if(!$player->hasPermission("worldguard.bypass-cmd." . $region->getName()) and !$player->hasPermission("worldguard.bypass-cmd")){
+        if (substr($cmd, 0, 1) === '/') {
+            if (($region = $this->plugin->getRegionByPlayer($player = $player)) !== "" && !$region->isCommandAllowed($cmd)) {
+                if (!$player->hasPermission("worldguard.bypass-cmd." . $region->getName()) and !$player->hasPermission("worldguard.bypass-cmd")) {
                     $player->sendMessage(TF::RED . 'You cannot use ' . $cmd . ' in this area.');
                     $event->cancel();
                 }
@@ -574,12 +512,13 @@ class EventListener implements Listener{
 
     /**
      * @param PlayerDropItemEvent $event
-     * @return void
+     * @ignoreCancelled true
      */
-    public function onDrop(PlayerDropItemEvent $event): void{
-        if(($reg = $this->plugin->getRegionByPlayer($player = $event->getPlayer())) !== ""){
-            if($reg->getFlag("item-drop") === "false" && !$player->hasPermission("worldguard.drop." . $reg->getName()) && !$player->hasPermission("worldguard.drop")){
-                if($reg->getFlag("deny-msg") === "true"){
+    public function onDrop(PlayerDropItemEvent $event)
+    {
+        if (($reg = $this->plugin->getRegionByPlayer($player = $event->getPlayer())) !== "") {
+            if ($reg->getFlag("item-drop") === "false" && !$player->hasPermission("worldguard.drop." . $reg->getName()) && !$player->hasPermission("worldguard.drop")) {
+                if ($reg->getFlag("deny-msg") === "true") {
                     $player->sendMessage(TF::RED . $this->plugin->resourceManager->getMessages()["denied-item-drop"]);
                 }
                 $event->cancel();
@@ -590,12 +529,13 @@ class EventListener implements Listener{
 
     /**
      * @param EntityExplodeEvent $event
-     * @return void
+     * @ignoreCancelled true
      */
-    public function onExplode(EntityExplodeEvent $event): void{
-        foreach ($event->getBlockList() as $block){
-            if(($region = $this->plugin->getRegionFromPosition($block->getPosition())) !== ""){
-                if($region->getFlag("explosion") === "false"){
+    public function onExplode(EntityExplodeEvent $event)
+    {
+        foreach ($event->getBlockList() as $block) {
+            if (($region = $this->plugin->getRegionFromPosition($block->getPosition())) !== "") {
+                if ($region->getFlag("explosion") === "false") {
                     $event->cancel();
                     return;
                 }
@@ -605,11 +545,12 @@ class EventListener implements Listener{
 
     /**
      * @param PlayerBedEnterEvent $event
-     * @return void
+     * @ignoreCancelled true
      */
-    public function onSleep(PlayerBedEnterEvent $event): void{
-        if(($region = $this->plugin->getRegionFromPosition($event->getBed()->getPosition())) !== ""){
-            if($region->getFlag("sleep") === "false"){
+    public function onSleep(PlayerBedEnterEvent $event)
+    {
+        if (($region = $this->plugin->getRegionFromPosition($event->getBed()->getPosition())) !== "") {
+            if ($region->getFlag("sleep") === "false") {
                 $event->cancel();
             }
         }
@@ -617,38 +558,36 @@ class EventListener implements Listener{
 
     /**
      * @param PlayerChatEvent $event
-     * @return void
+     * @ignoreCancelled true
      */
-    public function onChat(PlayerChatEvent $event): void{
-        if(($reg = $this->plugin->getRegionByPlayer($player = $event->getPlayer())) !== ""){
-            if($reg->getFlag("send-chat") === "false"){
-                if($reg->getFlag("deny-msg") === "true"){
+    public function onChat(PlayerChatEvent $event)
+    {
+        if (($reg = $this->plugin->getRegionByPlayer($player = $event->getPlayer())) !== "") {
+            if ($reg->getFlag("send-chat") === "false") {
+                if ($reg->getFlag("deny-msg") === "true") {
                     $player->sendMessage(TF::RED . $this->plugin->resourceManager->getMessages()["denied-chat"]);
                 }
                 $event->cancel();
                 return;
             }
         }
-        if(!empty($this->plugin->muted)){
+        if (!empty($this->plugin->muted)) {
             $diff = array_diff($this->plugin->getServer()->getOnlinePlayers(), $this->plugin->muted);
-            if(!in_array($player, $diff)){
+            if (!in_array($player, $diff)) {
                 $diff[] = $player;
             }
             $event->setRecipients($diff);
         }
     }
 
-    /**
-     * @param PlayerItemConsumeEvent $event
-     * @return void
-     */
-    public function onItemConsume(PlayerItemConsumeEvent $event): void{
+    public function onItemConsume(PlayerItemConsumeEvent $event)
+    {
         $player = $event->getPlayer();
-        if($player instanceof Player){
-            if(($region = $this->plugin->getRegionByPlayer($event->getPlayer())) !== ""){
-                if($region->getFlag("eat") === "false" && !$player->hasPermission("worldguard.eat." . $region->getName()) && !$player->hasPermission("worldguard.eat")){
+        if ($player instanceof Player) {
+            if (($region = $this->plugin->getRegionByPlayer($event->getPlayer())) !== "") {
+                if ($region->getFlag("eat") === "false" && !$player->hasPermission("worldguard.eat." . $region->getName()) && !$player->hasPermission("worldguard.eat")) {
                     $event->cancel();
-                    if($region->getFlag("deny-msg") === "true"){
+                    if ($region->getFlag("deny-msg") === "true") {
                         $player->sendMessage(TF::RED . $this->plugin->resourceManager->getMessages()["denied-eat"]);
                     }
                 }
@@ -656,47 +595,35 @@ class EventListener implements Listener{
         }
     }
 
-    /**
-     * @param PlayerExhaustEvent $exhaustEvent
-     * @return void
-     */
-    public function noHunger(PlayerExhaustEvent $exhaustEvent): void{
-        if($exhaustEvent->getPlayer() instanceof Player){
-            if(($region = $this->plugin->getRegionByPlayer($exhaustEvent->getPlayer())) !== ""){
-                if($region->getFlag("hunger") === "false"){
+    public function noHunger(PlayerExhaustEvent $exhaustEvent)
+    {
+        if ($exhaustEvent->getPlayer() instanceof Player) {
+            if (($region = $this->plugin->getRegionByPlayer($exhaustEvent->getPlayer())) !== "") {
+                if ($region->getFlag("hunger") === "false") {
                     $exhaustEvent->cancel();
                 }
             }
         }
     }
 
-    /**
-     * @param LeavesDecayEvent $event
-     * @return void
-     */
-    public function onLeafDecay(LeavesDecayEvent $event): void{
-        if(($region = $this->plugin->getRegionFromPosition($event->getBlock()->getPosition())) !== "")
-            if($region->getFlag("allow-leaves-decay") === "false")
+    public function onLeafDecay(LeavesDecayEvent $event)
+    {
+        if (($region = $this->plugin->getRegionFromPosition($event->getBlock()->getPosition())) !== "")
+            if ($region->getFlag("allow-leaves-decay") === "false")
                 $event->cancel();
     }
 
-    /**
-     * @param BlockGrowEvent $event
-     * @return void
-     */
-    public function onPlantGrowth(BlockGrowEvent $event): void{
-        if(($region = $this->plugin->getRegionFromPosition($event->getBlock()->getPosition())) !== "")
-            if($region->getFlag("allow-plant-growth") === "false")
+    public function onPlantGrowth(BlockGrowEvent $event)
+    {
+        if (($region = $this->plugin->getRegionFromPosition($event->getBlock()->getPosition())) !== "")
+            if ($region->getFlag("allow-plant-growth") === "false")
                 $event->cancel();
     }
 
-    /**
-     * @param BlockSpreadEvent $event
-     * @return void
-     */
-    public function onBlockSpread(BlockSpreadEvent $event): void{
-        if(($region = $this->plugin->getRegionFromPosition($event->getBlock()->getPosition())) !== "")
-            if($region->getFlag("allow-spreading") === "false")
+    public function onBlockSpread(BlockSpreadEvent $event)
+    {
+        if (($region = $this->plugin->getRegionFromPosition($event->getBlock()->getPosition())) !== "")
+            if ($region->getFlag("allow-spreading") === "false")
                 $event->cancel();
     }
 }
